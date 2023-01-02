@@ -1,0 +1,38 @@
+# Node.js
+# Build a general Node.js project with npm.
+# Add steps that analyze code, save build artifacts, deploy, and more:
+# https://docs.microsoft.com/azure/devops/pipelines/languages/javascript
+
+trigger:
+- main
+
+pool:
+  vmImage: ubuntu-latest
+
+steps:
+  # The third step starts Nginx on the build agent.
+  - task: ShellScript@2
+    inputs:
+  - script: |
+        service nginx start
+  - task: NodeTool@0
+    inputs:
+     versionSpec: '10.x'
+    displayName: 'Install Node.js'
+  - script: |
+         npm install
+         npm run build
+    displayName: 'npm install and build'
+  # The first step installs Nginx on the build agent.
+  - task: ShellScript@2
+    inputs:
+  - script: |
+        apt-get update
+        apt-get install -y nginx
+
+  # The second step copies the application files to the build agent.
+  - task: CopyFiles@2
+    inputs:
+      sourceFolder: '$(System.DefaultWorkingDirectory)/app'
+      targetFolder: '/var/www/html'
+
