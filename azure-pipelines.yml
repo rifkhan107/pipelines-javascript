@@ -12,7 +12,7 @@ pool:
 steps:
 - task: NodeTool@0
   inputs:
-    versionSpec: '16.x'
+    versionSpec: '10.x'
   displayName: 'Install Node.js'
 
 - script: |
@@ -20,22 +20,42 @@ steps:
     npm run build
   displayName: 'npm install and build'
 
-- task: CopyFiles@2
+- task: ArchiveFiles@2
   inputs:
-    sourceFolder: '$(Build.SourcesDirectory)'
-    contents: '*.tgz' 
-    targetFolder: $(Build.ArtifactStagingDirectory)/npm
-  displayName: 'Copy npm package'
+    rootFolderOrFile: '$(Build.BinariesDirectory)/build'
+    includeRootFolder: false
+    archiveType: 'zip'
+    archiveFile: '$(Build.ArtifactStagingDirectory)/$(Build.BuildId).zip'
+    replaceExistingArchive: true
+  displayName: 'Archive build artifact'
 
-- task: CopyFiles@2
+- task: PublishBuildArtifacts@1
   inputs:
-    sourceFolder: '$(Build.SourcesDirectory)'
-    contents: 'package.json' 
-    targetFolder: $(Build.ArtifactStagingDirectory)/npm
-  displayName: 'Copy package.json'   
+    PathtoPublish: '$(Build.ArtifactStagingDirectory)'
+  displayName: 'Publish build artifact'
 
-- task: PublishPipelineArtifact@1
+- task: CopyFilesOverSSH@0
   inputs:
-    targetPath: '$(Build.ArtifactStagingDirectory)/npm'
-    artifactName: npm
-  displayName: 'Publish npm artifact'
+    sshEndpoint: 'nginx-dev-con'
+    sourceFolder: '$(Build.ArtifactStagingDirectory)'
+    contents: '**'
+    targetFolder: '/tmp'
+    cleanTargetFolder: true
+    readyTimeout: '20000'
+  displayName: 'Copy build artifact to Ubuntu machine'
+
+- task: SSH@0
+  inputs:
+    sshEndpoint: 'nginx-dev-con'
+    runOptions: 'commands'
+    commands: 'unzip /tmp/$(Build.BuildId).zip -d /tmp/build'
+    readyTimeout: '20000'
+  displayName: 'Unpack build artifact on ubuntu machine'
+
+- task: SSH@0
+  inputs:
+    sshEndpoint: 'nginx-dev-con'
+    runOptions: 'commands'
+    commands: 'mv /tmp/build/* /var/www/html'
+    readyTimeout: '20000'
+  displayName: 'Move build output to /var/www/html on Ubuntu machine'
