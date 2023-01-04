@@ -42,7 +42,6 @@ steps:
     sourceFolder: '$(Build.ArtifactStagingDirectory)'
     contents: '**'
     targetFolder: '/tmp'
-    cleanTargetFolder: true
     readyTimeout: '20000'
   displayName: 'Copy build artifact to Ubuntu machine'
 
@@ -51,6 +50,7 @@ steps:
     sshEndpoint: 'nginx-dev-con'
     runOptions: 'commands'
     commands: 'unzip /tmp/$(Build.BuildId).zip -d /tmp/build'
+    failOnStdErr: false
     readyTimeout: '20000'
   displayName: 'Unpack build artifact on ubuntu machine'
 
